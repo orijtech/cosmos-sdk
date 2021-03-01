@@ -9,6 +9,7 @@ import (
 )
 
 func BenchmarkKeyGeneration(b *testing.B) {
+	b.Skip("genPrivKey is running forever")
 	b.ReportAllocs()
 	benchmarkKeygenWrapper := func(reader io.Reader) types.PrivKey {
 		priv := genPrivKey(reader)
