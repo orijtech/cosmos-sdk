@@ -25,39 +25,48 @@ func BenchmarkFullAppSimulation(b *testing.B) {
 	}
 
 	defer func() {
+		if db == nil {
+			panic("dbm is nil")
+		}
 		db.Close()
 		err = os.RemoveAll(dir)
 		if err != nil {
 			b.Fatal(err)
 		}
 	}()
+	b.ReportAllocs()
 
 	app := NewSimApp(logger, db, nil, true, map[int64]bool{}, DefaultNodeHome, FlagPeriodValue, MakeTestEncodingConfig(), EmptyAppOptions{}, interBlockCacheOpt())
 
-	// run randomized simulation
-	_, simParams, simErr := simulation.SimulateFromSeed(
-		b,
-		os.Stdout,
-		app.BaseApp,
-		AppStateFn(app.AppCodec(), app.SimulationManager()),
-		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-		SimulationOperations(app, app.AppCodec(), config),
-		app.ModuleAccountAddrs(),
-		config,
-		app.AppCodec(),
-	)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		func() {
+			// run randomized simulation
+			_, simParams, simErr := simulation.SimulateFromSeed(
+				b,
+				os.Stdout,
+				app.BaseApp,
+				AppStateFn(app.AppCodec(), app.SimulationManager()),
+				simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
+				SimulationOperations(app, app.AppCodec(), config),
+				app.ModuleAccountAddrs(),
+				config,
+				app.AppCodec(),
+			)
 
-	// export state and simParams before the simulation error is checked
-	if err = CheckExportSimulation(app, config, simParams); err != nil {
-		b.Fatal(err)
-	}
+			// export state and simParams before the simulation error is checked
+			if err = CheckExportSimulation(app, config, simParams); err != nil {
+				b.Fatal(err)
+			}
 
-	if simErr != nil {
-		b.Fatal(simErr)
-	}
+			if simErr != nil {
+				b.Fatal(simErr)
+			}
 
-	if config.Commit {
-		PrintStats(db)
+			if config.Commit {
+				PrintStats(db)
+			}
+		}()
 	}
 }
 

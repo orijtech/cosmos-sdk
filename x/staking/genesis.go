@@ -35,7 +35,7 @@ func InitGenesis(
 	keeper.SetParams(ctx, data.Params)
 	keeper.SetLastTotalPower(ctx, data.LastTotalPower)
 
-	for _, validator := range data.Validators {
+	for i, validator := range data.Validators {
 		keeper.SetValidator(ctx, validator)
 
 		// Manually set indices for the first time
@@ -55,6 +55,7 @@ func InitGenesis(
 		switch validator.GetStatus() {
 		case types.Bonded:
 			bondedTokens = bondedTokens.Add(validator.GetTokens())
+                        println(i, "gotTokens", validator.GetTokens().Int64())
 		case types.Unbonding, types.Unbonded:
 			notBondedTokens = notBondedTokens.Add(validator.GetTokens())
 		default:
@@ -112,7 +113,7 @@ func InitGenesis(
 	}
 	// if balance is different from bonded coins panic because genesis is most likely malformed
 	if !bondedBalance.IsEqual(bondedCoins) {
-		panic(fmt.Sprintf("bonded pool balance is different from bonded coins: %s <-> %s", bondedBalance, bondedCoins))
+		panic(fmt.Sprintf("bonded pool balance is different from bonded coins:\n\t%s\n\t%s", bondedBalance, bondedCoins))
 	}
 	notBondedPool := keeper.GetNotBondedPool(ctx)
 	if notBondedPool == nil {
