@@ -26,6 +26,7 @@ import (
 // InitChain implements the ABCI interface. It runs the initialization logic
 // directly on the CommitMultiStore.
 func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitChain) {
+	startTime := time.Now()
 	// On a new chain, we consider the init chain block height as 0, even though
 	// req.InitialHeight is 1 by default.
 	initHeader := tmproto.Header{ChainID: req.ChainId, Time: req.Time}
@@ -33,23 +34,31 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	// If req.InitialHeight is > 1, then we set the initial version in the
 	// stores.
 	if req.InitialHeight > 1 {
+		println("starting setting initialversion", time.Since(startTime).String())
 		app.initialHeight = req.InitialHeight
 		initHeader = tmproto.Header{ChainID: req.ChainId, Height: req.InitialHeight, Time: req.Time}
 		err := app.cms.SetInitialVersion(req.InitialHeight)
 		if err != nil {
 			panic(err)
 		}
+		println("finishing setting initialversion", time.Since(startTime).String())
 	}
 
 	// initialize the deliver state and check state with a correct header
+	println("starting setting deliverState", time.Since(startTime).String())
 	app.setDeliverState(initHeader)
+	println("finished setting deliverState", time.Since(startTime).String())
+	println("starting setting checkState", time.Since(startTime).String())
 	app.setCheckState(initHeader)
+	println("finished setting checkState", time.Since(startTime).String())
 
 	// Store the consensus params in the BaseApp's paramstore. Note, this must be
 	// done after the deliver state and context have been set as it's persisted
 	// to state.
 	if req.ConsensusParams != nil {
+		println("starting storeConsensus", time.Since(startTime).String())
 		app.StoreConsensusParams(app.deliverState.ctx, req.ConsensusParams)
+		println("finished storeConsensus", time.Since(startTime).String())
 	}
 
 	if app.initChainer == nil {
@@ -57,9 +66,13 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	}
 
 	// add block gas meter for any genesis transactions (allow infinite gas)
+	println("starting ctx.WithBlockGasMeter", time.Since(startTime).String())
 	app.deliverState.ctx = app.deliverState.ctx.WithBlockGasMeter(sdk.NewInfiniteGasMeter())
+	println("finished ctx.WithBlockGasMeter", time.Since(startTime).String())
 
+	println("started initChainer", time.Since(startTime).String())
 	res = app.initChainer(app.deliverState.ctx, req)
+	println("finished initChainer", time.Since(startTime).String())
 
 	// sanity check
 	if len(req.Validators) > 0 {
@@ -72,8 +85,12 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 			)
 		}
 
+		println("started sorting req.validatorUpdates", time.Since(startTime).String())
 		sort.Sort(abci.ValidatorUpdates(req.Validators))
+		println("finished sorting req.validatorUpdates", time.Since(startTime).String())
+		println("started sorting res.validatorors", time.Since(startTime).String())
 		sort.Sort(abci.ValidatorUpdates(res.Validators))
+		println("finished sorting res.validatorUpdates", time.Since(startTime).String())
 
 		for i := range res.Validators {
 			if !proto.Equal(&res.Validators[i], &req.Validators[i]) {
