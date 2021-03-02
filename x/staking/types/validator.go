@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+        "sync"
 	"sort"
 	"strings"
 	"time"
@@ -493,14 +494,28 @@ func (v Validator) TmConsPublicKey() (tmprotocrypto.PublicKey, error) {
 	return tmPk, nil
 }
 
+var validatorCache = make(map[Validator]sdk.ConsAddress)
+var validatorCacheMu sync.Mutex
+
 // GetConsAddr extracts Consensus key address
 func (v Validator) GetConsAddr() (sdk.ConsAddress, error) {
+	validatorCacheMu.Lock()
+	defer validatorCacheMu.Unlock()
+
+	if consAddr, ok := validatorCache[v]; ok {
+		// Cache hit so retrieve the value.
+		return consAddr, nil
+	}
+
+	// Cache miss so produce the value.
 	pk, ok := v.ConsensusPubkey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidType, "expecting cryptotypes.PubKey, got %T", pk)
 	}
 
-	return sdk.ConsAddress(pk.Address()), nil
+	consAddr := sdk.ConsAddress(pk.Address())
+	validatorCache[v] = consAddr
+	return consAddr, nil
 }
 
 func (v Validator) GetTokens() sdk.Int            { return v.Tokens }

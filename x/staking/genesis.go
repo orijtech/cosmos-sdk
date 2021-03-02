@@ -241,9 +241,8 @@ func validateGenesisStateValidators(validators []types.Validator) error {
 		if err != nil {
 			return err
 		}
-		strKey := string(consPk.Bytes())
 
-		if _, ok := addrMap[strKey]; ok {
+		if _, ok := addrMap[string(consPk.Bytes())]; ok {
 			return fmt.Errorf("duplicate validator in genesis state: moniker %v, address %v", val.Description.Moniker, consAddr)
 		}
 
@@ -255,7 +254,7 @@ func validateGenesisStateValidators(validators []types.Validator) error {
 			return fmt.Errorf("bonded/unbonded genesis validator cannot have zero delegator shares, validator: %v", val)
 		}
 
-		addrMap[strKey] = true
+		addrMap[string(consPk.Bytes())] = true
 	}
 
 	return nil
