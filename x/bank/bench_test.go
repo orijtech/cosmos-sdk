@@ -20,6 +20,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/orijtech/oragent/exporter"
 )
 
 var moduleAccAddr = authtypes.NewModuleAddress(stakingtypes.BondedPoolName)
@@ -114,6 +115,12 @@ func benchmarkOneBankMultiSendTxPerBlock(b *testing.B, benchmarkApp *simapp.SimA
 }
 
 func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
+	exp, xerr := exporter.New(context.Background(), exporter.WithInsecureAddress(":8444"))
+	if xerr != nil {
+		panic(xerr)
+	}
+	defer exp.Stop()
+
 	dir := b.TempDir()
 
 	startTime := time.Now()
@@ -125,13 +132,14 @@ func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
 	defer db.Close()
 
 	// 1. Generate n validators.
-	valSet, _ := tmtypes.RandValidatorSet(100, 10)
+	valSet, _ := tmtypes.RandValidatorSet(100, 1e6)
 	println("generated validatorset", time.Since(startTime).String())
 
 	// 2. Generate balances and accounts.
-	addrs, _ := makeRandomAddressesAndPublicKeys(400)
+	addrs, _ := makeRandomAddressesAndPublicKeys(100000)
 	println("generated random addresses and publickeys", time.Since(startTime).String())
-	genCoin := sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(1))
+	genTokens := sdk.TokensFromConsensusPower(67)
+	genCoin := sdk.NewCoin("benchcoin", genTokens)
 	var balances []banktypes.Balance
 	var accounts []types.GenesisAccount
 	coins := sdk.Coins{genCoin}

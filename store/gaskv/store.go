@@ -80,6 +80,14 @@ func (gs *Store) Iterator(start, end []byte) types.Iterator {
 	return gs.iterator(start, end, true)
 }
 
+func (gs *Store) IteratorWithFullRange() types.Iterator {
+	return gs.iterator(nil, nil, true)
+}
+
+func (gs *Store) ReverseIteratorWithFullRange() types.Iterator {
+	return gs.iterator(nil, nil, false)
+}
+
 // ReverseIterator implements the KVStore interface. It returns a reverse
 // iterator which incurs a flat gas cost for seeking to the first key/value pair
 // and a variable gas cost based on the current value's length if the iterator
