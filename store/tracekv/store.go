@@ -84,10 +84,18 @@ func (tkv *Store) Iterator(start, end []byte) types.Iterator {
 	return tkv.iterator(start, end, true)
 }
 
+func (tkv *Store) IteratorWithFullRange() types.Iterator {
+	return tkv.iterator(nil, nil, true)
+}
+
 // ReverseIterator implements the KVStore interface. It delegates the
 // ReverseIterator call the to the parent KVStore.
 func (tkv *Store) ReverseIterator(start, end []byte) types.Iterator {
 	return tkv.iterator(start, end, false)
+}
+
+func (tkv *Store) ReverseIteratorWithFullRange() types.Iterator {
+	return tkv.iterator(nil, nil, false)
 }
 
 // iterator facilitates iteration over a KVStore. It delegates the necessary

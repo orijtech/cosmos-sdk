@@ -83,6 +83,11 @@ func (s Store) Delete(key []byte) {
 // Implements KVStore
 // Check https://github.com/tendermint/tendermint/blob/master/libs/db/prefix_db.go#L106
 func (s Store) Iterator(start, end []byte) types.Iterator {
+	if len(start) == 0 && len(end) == 0 {
+		iter := s.parent.IteratorWithFullRange()
+		return newPrefixIterator(s.prefix, start, end, iter)
+	}
+
 	newstart := cloneAppend(s.prefix, start)
 
 	var newend []byte
@@ -97,9 +102,22 @@ func (s Store) Iterator(start, end []byte) types.Iterator {
 	return newPrefixIterator(s.prefix, start, end, iter)
 }
 
+func (s Store) IteratorWithFullRange() types.Iterator {
+	return s.Iterator(nil, nil)
+}
+
+func (s Store) ReverseIteratorWithFullRange() types.Iterator {
+	return s.ReverseIterator(nil, nil)
+}
+
 // ReverseIterator implements KVStore
 // Check https://github.com/tendermint/tendermint/blob/master/libs/db/prefix_db.go#L129
 func (s Store) ReverseIterator(start, end []byte) types.Iterator {
+	if len(start) == 0 && len(end) == 0 {
+		iter := s.parent.ReverseIteratorWithFullRange()
+		return newPrefixIterator(s.prefix, start, end, iter)
+	}
+
 	newstart := cloneAppend(s.prefix, start)
 
 	var newend []byte

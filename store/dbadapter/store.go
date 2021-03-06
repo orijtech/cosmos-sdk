@@ -60,6 +60,14 @@ func (dsa Store) Iterator(start, end []byte) types.Iterator {
 	return iter
 }
 
+func (dsa Store) IteratorWithFullRange() types.Iterator {
+	return dsa.Iterator(nil, nil)
+}
+
+func (dsa Store) ReverseIteratorWithFullRange() types.Iterator {
+	return dsa.ReverseIterator(nil, nil)
+}
+
 // ReverseIterator wraps the underlying DB's ReverseIterator method panicing on error.
 func (dsa Store) ReverseIterator(start, end []byte) types.Iterator {
 	iter, err := dsa.DB.ReverseIterator(start, end)
