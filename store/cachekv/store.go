@@ -172,16 +172,25 @@ func (store *Store) iterator(start, end []byte, ascending bool) types.Iterator {
 	store.mtx.Lock()
 	defer store.mtx.Unlock()
 
-	var parent, cache types.Iterator
+	var parent types.Iterator
 
-	if ascending {
+        switch {
+	case len(start) == 0 && len(end) == 0:
+		if ascending {
+			parent = store.parent.IteratorWithFullRange()
+		} else {
+			parent = store.parent.ReverseIteratorWithFullRange()
+		}
+
+	case ascending:
 		parent = store.parent.Iterator(start, end)
-	} else {
+
+	default:
 		parent = store.parent.ReverseIterator(start, end)
 	}
 
 	store.dirtyItems(start, end)
-	cache = newMemIterator(start, end, store.sortedCache, ascending)
+        cache := newMemIterator(start, end, store.sortedCache, ascending)
 
 	return newCacheMergeIterator(parent, cache, ascending)
 }

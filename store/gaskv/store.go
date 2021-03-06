@@ -108,9 +108,18 @@ func (gs *Store) CacheWrapWithTrace(_ io.Writer, _ types.TraceContext) types.Cac
 
 func (gs *Store) iterator(start, end []byte, ascending bool) types.Iterator {
 	var parent types.Iterator
-	if ascending {
+	switch {
+	case len(start) == 0 && len(end) == 0:
+		if ascending {
+			parent = gs.parent.IteratorWithFullRange()
+		} else {
+			parent = gs.parent.ReverseIteratorWithFullRange()
+		}
+
+	case ascending:
 		parent = gs.parent.Iterator(start, end)
-	} else {
+
+	default:
 		parent = gs.parent.ReverseIterator(start, end)
 	}
 
