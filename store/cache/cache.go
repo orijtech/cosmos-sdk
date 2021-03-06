@@ -103,7 +103,7 @@ func (ckv *CommitKVStoreCache) Get(key []byte) []byte {
 	keyStr := string(key)
 	valueI, ok := ckv.cache.Get(keyStr)
 	if ok {
-		// cache hit
+		// Cache hit
 		return valueI.([]byte)
 	}
 
