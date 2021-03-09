@@ -136,11 +136,9 @@ func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
 
 	// 1. Generate n validators.
 	valSet, _ := tmtypes.RandValidatorSet(100, 1e6)
-	println("generated validatorset", time.Since(startTime).String())
 
 	// 2. Generate balances and accounts.
 	addrs, _ := makeRandomAddressesAndPublicKeys(100000)
-	println("generated random addresses and publickeys", time.Since(startTime).String())
 	genTokens := sdk.TokensFromConsensusPower(67)
 	genCoin := sdk.NewCoin("benchcoin", genTokens)
 	var balances []banktypes.Balance
@@ -158,10 +156,8 @@ func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
 			AccountNumber: uint64(i + 1),
 		})
 	}
-	println("generated balances and accounts", time.Since(startTime).String())
 
 	app := simapp.SetupWithGenesisValSetAndDB(b, db, valSet, accounts, balances...)
-	println("finished generating the app", time.Since(startTime).String())
 	benchmarkOneBankMultiSendTxPerBlock(b, app)
 }
 

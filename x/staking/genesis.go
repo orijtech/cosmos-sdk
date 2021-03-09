@@ -35,7 +35,7 @@ func InitGenesis(
 	keeper.SetParams(ctx, data.Params)
 	keeper.SetLastTotalPower(ctx, data.LastTotalPower)
 
-	for i, validator := range data.Validators {
+	for _, validator := range data.Validators {
 		keeper.SetValidator(ctx, validator)
 
 		// Manually set indices for the first time
@@ -55,7 +55,6 @@ func InitGenesis(
 		switch validator.GetStatus() {
 		case types.Bonded:
 			bondedTokens = bondedTokens.Add(validator.GetTokens())
-                        println(i, "gotTokens", validator.GetTokens().Int64())
 		case types.Unbonding, types.Unbonded:
 			notBondedTokens = notBondedTokens.Add(validator.GetTokens())
 		default:

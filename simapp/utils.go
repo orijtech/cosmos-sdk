@@ -43,11 +43,6 @@ func SetupSimulation(dirPrefix, dbName string) (simtypes.Config, dbm.DB, string,
 	if err != nil {
 		return simtypes.Config{}, nil, "", nil, false, err
 	}
-        if db == nil {
-            panic("db is nil")
-        } else {
-            println("db is non-nil")
-        }
 
 	return config, db, dir, logger, false, nil
 }
