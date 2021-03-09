@@ -206,6 +206,14 @@ func (st *Store) Iterator(start, end []byte) types.Iterator {
 	return newIAVLIterator(iTree, start, end, true)
 }
 
+func (st *Store) IteratorWithFullRange() types.Iterator {
+	return st.Iterator(nil, nil)
+}
+
+func (st *Store) ReverseIteratorWithFullRange() types.Iterator {
+	return st.ReverseIterator(nil, nil)
+}
+
 // Implements types.KVStore.
 func (st *Store) ReverseIterator(start, end []byte) types.Iterator {
 	var iTree *iavl.ImmutableTree

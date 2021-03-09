@@ -154,36 +154,54 @@ func (store *Store) Iterator(start, end []byte) types.Iterator {
 	return store.iterator(start, end, true)
 }
 
+func (store *Store) IteratorWithFullRange() types.Iterator {
+	return store.iterator(nil, nil, true)
+}
+
 // ReverseIterator implements types.KVStore.
 func (store *Store) ReverseIterator(start, end []byte) types.Iterator {
 	return store.iterator(start, end, false)
+}
+
+func (store *Store) ReverseIteratorWithFullRange() types.Iterator {
+	return store.iterator(nil, nil, false)
 }
 
 func (store *Store) iterator(start, end []byte, ascending bool) types.Iterator {
 	store.mtx.Lock()
 	defer store.mtx.Unlock()
 
-	var parent, cache types.Iterator
+	var parent types.Iterator
 
-	if ascending {
+        switch {
+	case len(start) == 0 && len(end) == 0:
+		if ascending {
+			parent = store.parent.IteratorWithFullRange()
+		} else {
+			parent = store.parent.ReverseIteratorWithFullRange()
+		}
+
+	case ascending:
 		parent = store.parent.Iterator(start, end)
-	} else {
+
+	default:
 		parent = store.parent.ReverseIterator(start, end)
 	}
 
 	store.dirtyItems(start, end)
-	cache = newMemIterator(start, end, store.sortedCache, ascending)
+        cache := newMemIterator(start, end, store.sortedCache, ascending)
 
 	return newCacheMergeIterator(parent, cache, ascending)
 }
 
 // Constructs a slice of dirty items, to use w/ memIterator.
 func (store *Store) dirtyItems(start, end []byte) {
+        searchFromStartToFinish := (start == nil && end == nil) || (len(start) == 0 && len(end) == 0)
 	unsorted := make([]*kv.Pair, 0)
 
 	n := len(store.unsortedCache)
 	for key := range store.unsortedCache {
-		if dbm.IsKeyInDomain(conv.UnsafeStrToBytes(key), start, end) {
+		if searchFromStartToFinish || dbm.IsKeyInDomain(conv.UnsafeStrToBytes(key), start, end) {
 			cacheValue := store.cache[key]
 			unsorted = append(unsorted, &kv.Pair{Key: []byte(key), Value: cacheValue.value})
 		}

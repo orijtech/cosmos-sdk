@@ -80,6 +80,14 @@ func (gs *Store) Iterator(start, end []byte) types.Iterator {
 	return gs.iterator(start, end, true)
 }
 
+func (gs *Store) IteratorWithFullRange() types.Iterator {
+	return gs.iterator(nil, nil, true)
+}
+
+func (gs *Store) ReverseIteratorWithFullRange() types.Iterator {
+	return gs.iterator(nil, nil, false)
+}
+
 // ReverseIterator implements the KVStore interface. It returns a reverse
 // iterator which incurs a flat gas cost for seeking to the first key/value pair
 // and a variable gas cost based on the current value's length if the iterator
@@ -100,9 +108,18 @@ func (gs *Store) CacheWrapWithTrace(_ io.Writer, _ types.TraceContext) types.Cac
 
 func (gs *Store) iterator(start, end []byte, ascending bool) types.Iterator {
 	var parent types.Iterator
-	if ascending {
+	switch {
+	case len(start) == 0 && len(end) == 0:
+		if ascending {
+			parent = gs.parent.IteratorWithFullRange()
+		} else {
+			parent = gs.parent.ReverseIteratorWithFullRange()
+		}
+
+	case ascending:
 		parent = gs.parent.Iterator(start, end)
-	} else {
+
+	default:
 		parent = gs.parent.ReverseIterator(start, end)
 	}
 
