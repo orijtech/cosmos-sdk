@@ -3,6 +3,7 @@ package cache
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/internal/conv"
 	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/types"
 
@@ -120,13 +121,13 @@ func (ckv *CommitKVStoreCache) Set(key, value []byte) {
 	types.AssertValidKey(key)
 	types.AssertValidValue(value)
 
-	ckv.cache.Add(string(key), value)
+	ckv.cache.Add(conv.UnsafeBytesToStr(key), value)
 	ckv.CommitKVStore.Set(key, value)
 }
 
 // Delete removes a key/value pair from both the write-through cache and the
 // underlying CommitKVStore.
 func (ckv *CommitKVStoreCache) Delete(key []byte) {
-	ckv.cache.Remove(string(key))
+	ckv.cache.Remove(conv.UnsafeBytesToStr(key))
 	ckv.CommitKVStore.Delete(key)
 }
