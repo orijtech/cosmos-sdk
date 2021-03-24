@@ -2,7 +2,7 @@ package cache
 
 import (
 	"fmt"
-        "time"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/types"
@@ -82,7 +82,7 @@ func (cmgr *CommitKVStoreCacheManager) Unwrap(key types.StoreKey) types.CommitKV
 
 // Reset resets in the internal caches.
 func (cmgr *CommitKVStoreCacheManager) Reset() {
-        <-time.After(10 * time.Millisecond)
+	<-time.After(5 * time.Millisecond)
 	// Clear the map.
 	// Please note that we are purposefully using the map clearing idiom.
 	// See https://github.com/cosmos/cosmos-sdk/issues/6681.
