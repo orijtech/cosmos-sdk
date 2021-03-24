@@ -128,6 +128,7 @@ func (ckv *CommitKVStoreCache) Set(key, value []byte) {
 // Delete removes a key/value pair from both the write-through cache and the
 // underlying CommitKVStore.
 func (ckv *CommitKVStoreCache) Delete(key []byte) {
+        // Use an unsafe conversion for zero cost []byte->string.
 	ckv.cache.Remove(conv.UnsafeBytesToStr(key))
 	ckv.CommitKVStore.Delete(key)
 }
