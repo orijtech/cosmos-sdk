@@ -196,7 +196,6 @@ To query for the total supply of a specific coin denomination use:
 			if err != nil {
 				return err
 			}
-
 			return clientCtx.PrintProto(&res.Amount)
 		},
 	}
