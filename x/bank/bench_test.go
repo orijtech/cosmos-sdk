@@ -113,6 +113,7 @@ func benchmarkOneBankMultiSendTxPerBlock(b *testing.B, benchmarkApp *simapp.SimA
 }
 
 func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
+	b.Skip("Not yet ready")
 	dir := b.TempDir()
 
 	startTime := time.Now()
