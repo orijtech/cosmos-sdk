@@ -67,6 +67,15 @@ func BenchmarkOneBankSendTxPerBlock(b *testing.B) {
 
 func BenchmarkOneBankMultiSendTxPerBlock(b *testing.B) {
 	b.ReportAllocs()
+
+	dir := b.TempDir()
+	b.ReportAllocs()
+	db, err := dbm.NewGoLevelDB("onebankmultisend100k", filepath.Join(dir, "db"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.Close()
+
 	// Add an account at genesis
 	acc := authtypes.BaseAccount{
 		Address: addr1.String(),
@@ -74,7 +83,7 @@ func BenchmarkOneBankMultiSendTxPerBlock(b *testing.B) {
 
 	// Construct genesis state
 	genAccs := []authtypes.GenesisAccount{&acc}
-	benchmarkApp := simapp.SetupWithGenesisAccounts(genAccs)
+	benchmarkApp := simapp.SetupWithGenesisAccountsWithDB(db, genAccs)
 
 	benchmarkOneBankMultiSendTxPerBlock(b, benchmarkApp)
 }

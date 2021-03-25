@@ -54,7 +54,7 @@ func (gs GenesisState) Validate() error {
 		}
 
 		if !gs.Supply.IsEqual(totalSupply) {
-			return fmt.Errorf("genesis supply is incorrect, expected %v, got %v", gs.Supply, totalSupply)
+			return fmt.Errorf("genesis supply is incorrect\nwant: %v\ngot:  %v", gs.Supply, totalSupply)
 		}
 	}
 

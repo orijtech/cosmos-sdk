@@ -95,7 +95,7 @@ func SetupWithGenesisValSet(tb testing.TB, valSet *tmtypes.ValidatorSet, genAccs
 }
 
 func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *SimApp {
-    startTime := time.Now()
+	startTime := time.Now()
 	app, genesisState := setupWithDB(db, true, 5)
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
@@ -106,7 +106,7 @@ func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.Valid
 
 	bondAmt := sdk.NewInt(1000000)
 
-        println("starting delegations and validators creation", time.Since(startTime).String())
+	if false { println("starting delegations and validators creation", time.Since(startTime).String()) }
 	for _, val := range valSet.Validators {
 		pk, err := cryptocodec.FromTmPubKeyInterface(val.PubKey)
 		require.NoError(tb, err)
@@ -129,19 +129,19 @@ func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.Valid
 		delegations = append(delegations, stakingtypes.NewDelegation(genAccs[0].GetAddress(), val.Address.Bytes(), sdk.OneDec()))
 
 	}
-        println("finished delegations and validators creation", time.Since(startTime).String())
+	if false { println("finished delegations and validators creation", time.Since(startTime).String()) }
 
 	// set validators and delegations
 	stakingGenesis := stakingtypes.NewGenesisState(stakingtypes.DefaultParams(), validators, delegations)
 	genesisState[stakingtypes.ModuleName] = app.AppCodec().MustMarshalJSON(stakingGenesis)
 
 	totalSupply := sdk.NewCoins()
-        println("starting balances adding", time.Since(startTime).String())
+	if false { println("starting balances adding", time.Since(startTime).String()) }
 	for _, b := range balances {
 		// add genesis acc tokens and delegated tokens to total supply
 		totalSupply = totalSupply.Add(b.Coins.Add(sdk.NewCoin(sdk.DefaultBondDenom, bondAmt))...)
 	}
-        println("finished balances adding", time.Since(startTime).String())
+	if false { println("finished balances adding", time.Since(startTime).String()) }
 
 	// add bonded amount to bonded pool module account
 	balances = append(balances, banktypes.Balance{
@@ -157,7 +157,7 @@ func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.Valid
 	require.NoError(tb, err)
 
 	// init chain will set the validator set and initialize the genesis accounts
-        println("starting app.InitChain", time.Since(startTime).String())
+	if false { println("starting app.InitChain", time.Since(startTime).String()) }
 	app.InitChain(
 		abci.RequestInitChain{
 			Validators:      []abci.ValidatorUpdate{},
@@ -165,20 +165,20 @@ func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.Valid
 			AppStateBytes:   stateBytes,
 		},
 	)
-        println("finished app.InitChain", time.Since(startTime).String())
+	if false { println("finished app.InitChain", time.Since(startTime).String()) }
 
 	// commit genesis changes
-        println("starting app.Commit", time.Since(startTime).String())
+	if false { println("starting app.Commit", time.Since(startTime).String()) }
 	app.Commit()
-        println("finished app.Commit", time.Since(startTime).String())
-        println("beginning app.BeginBlock", time.Since(startTime).String())
+	if false { println("finished app.Commit", time.Since(startTime).String()) }
+	if false { println("beginning app.BeginBlock", time.Since(startTime).String()) }
 	app.BeginBlock(abci.RequestBeginBlock{Header: tmproto.Header{
 		Height:             app.LastBlockHeight() + 1,
 		AppHash:            app.LastCommitID().Hash,
 		ValidatorsHash:     valSet.Hash(),
 		NextValidatorsHash: valSet.Hash(),
 	}})
-        println("finished app.BeginBlock", time.Since(startTime).String())
+	if false { println("finished app.BeginBlock", time.Since(startTime).String()) }
 
 	return app
 }
@@ -186,7 +186,13 @@ func SetupWithGenesisValSetAndDB(tb testing.TB, db dbm.DB, valSet *tmtypes.Valid
 // SetupWithGenesisAccounts initializes a new SimApp with the provided genesis
 // accounts and possible balances.
 func SetupWithGenesisAccounts(genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *SimApp {
-	app, genesisState := setup(true, 0)
+	return SetupWithGenesisAccountsWithDB(dbm.NewMemDB(), genAccs, balances...)
+}
+
+// SetupWithGenesisAccounts initializes a new SimApp with the provided database,
+// genesis accounts and possible balances.
+func SetupWithGenesisAccountsWithDB(db dbm.DB, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) *SimApp {
+	app, genesisState := setupWithDB(db, true, 0)
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = app.AppCodec().MustMarshalJSON(authGenesis)
 

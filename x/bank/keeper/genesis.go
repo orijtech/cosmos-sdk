@@ -28,7 +28,7 @@ func (k BaseKeeper) InitGenesis(ctx sdk.Context, genState *types.GenesisState) {
 	}
 
 	if !genState.Supply.Empty() && !genState.Supply.IsEqual(totalSupply) {
-		panic(fmt.Errorf("genesis supply is incorrect, expected %v, got %v", genState.Supply, totalSupply))
+		panic(fmt.Errorf("genesis supply is incorrect\nwant: %v\ngot:  %v", genState.Supply, totalSupply))
 	}
 
 	k.setSupply(ctx, totalSupply)
