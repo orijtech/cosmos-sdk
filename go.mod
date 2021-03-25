@@ -2,10 +2,6 @@ go 1.15
 
 module github.com/cosmos/cosmos-sdk
 
-replace github.com/orijtech/oragent => ../../orijtech/oragent
-
-replace github.com/orijtech/oragent-ui => ../../orijtech/oragent-ui
-
 require (
 	github.com/99designs/keyring v1.1.6
 	github.com/armon/go-metrics v0.3.6
@@ -34,7 +30,6 @@ require (
 	github.com/jhump/protoreflect v1.8.2
 	github.com/magiconair/properties v1.8.4
 	github.com/mattn/go-isatty v0.0.12
-	github.com/orijtech/oragent v0.0.0-00010101000000-000000000000
 	github.com/otiai10/copy v1.5.0
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1

@@ -1,7 +1,6 @@
 package bank_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,7 +19,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/orijtech/oragent/exporter"
 )
 
 var moduleAccAddr = authtypes.NewModuleAddress(stakingtypes.BondedPoolName)
@@ -115,12 +113,6 @@ func benchmarkOneBankMultiSendTxPerBlock(b *testing.B, benchmarkApp *simapp.SimA
 }
 
 func BenchmarkOneBankMultiSendTxPerBlock100K(b *testing.B) {
-	exp, xerr := exporter.New(context.Background(), exporter.WithInsecureAddress(":8444"))
-	if xerr != nil {
-		panic(xerr)
-	}
-	defer exp.Stop()
-
 	dir := b.TempDir()
 
 	startTime := time.Now()
