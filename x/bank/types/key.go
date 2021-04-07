@@ -26,6 +26,7 @@ var (
 	BalancesPrefix      = []byte{0x02}
 	SupplyKey           = []byte{0x00}
 	DenomMetadataPrefix = []byte{0x1}
+	InvalidKey          = []byte{0x00}
 )
 
 // DenomMetadataKey returns the denomination metadata key.
@@ -37,8 +38,16 @@ func DenomMetadataKey(denom string) []byte {
 // AddressFromBalancesStore returns an account address from a balances prefix
 // store. The key must not contain the perfix BalancesPrefix as the prefix store
 // iterator discards the actual prefix.
+//
+// If invalid key is passed, AddressFromBalancesStore returns InvalidKey.
 func AddressFromBalancesStore(key []byte) sdk.AccAddress {
+	if len(key) == 0 {
+		return sdk.AccAddress(InvalidKey)
+	}
 	addrLen := key[0]
+	if len(key[1:]) < int(addrLen) {
+		return sdk.AccAddress(InvalidKey)
+	}
 	addr := key[1 : addrLen+1]
 
 	return sdk.AccAddress(addr)

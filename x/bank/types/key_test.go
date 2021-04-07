@@ -27,3 +27,23 @@ func TestAddressFromBalancesStore(t *testing.T) {
 	res := types.AddressFromBalancesStore(key)
 	require.Equal(t, res, addr)
 }
+
+func TestInvalidAddressFromBalancesStore(t *testing.T) {
+	tests := []struct {
+		name string
+		key  []byte
+	}{
+		{"empty", []byte("")},
+		{"invalid", []byte("3AA")},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if addr := types.AddressFromBalancesStore(tc.key); string(addr) != string(types.InvalidKey) {
+				t.Errorf("expected invalid key, got: %v", addr)
+			}
+		})
+	}
+}
