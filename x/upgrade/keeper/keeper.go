@@ -17,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	xp "github.com/cosmos/cosmos-sdk/x/upgrade/exported"
 	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
@@ -24,21 +25,28 @@ import (
 const UpgradeInfoFileName string = "upgrade-info.json"
 
 type Keeper struct {
-	homePath           string
-	skipUpgradeHeights map[int64]bool
-	storeKey           sdk.StoreKey
-	cdc                codec.BinaryMarshaler
-	upgradeHandlers    map[string]types.UpgradeHandler
+	homePath           string                          // root directory of app config
+	skipUpgradeHeights map[int64]bool                  // map of heights to skip for an upgrade
+	storeKey           sdk.StoreKey                    // key to access x/upgrade store
+	cdc                codec.BinaryCodec               // App-wide binary codec
+	upgradeHandlers    map[string]types.UpgradeHandler // map of plan name to upgrade handler
+	versionSetter      xp.ProtocolVersionSetter        // implements setting the protocol version field on BaseApp
 }
 
-// NewKeeper constructs an upgrade Keeper
-func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc codec.BinaryMarshaler, homePath string) Keeper {
+// NewKeeper constructs an upgrade Keeper which requires the following arguments:
+// skipUpgradeHeights - map of heights to skip an upgrade
+// storeKey - a store key with which to access upgrade's store
+// cdc - the app-wide binary codec
+// homePath - root directory of the application's config
+// vs - the interface implemented by baseapp which allows setting baseapp's protocol version field
+func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc codec.BinaryCodec, homePath string, vs xp.ProtocolVersionSetter) Keeper {
 	return Keeper{
 		homePath:           homePath,
 		skipUpgradeHeights: skipUpgradeHeights,
 		storeKey:           storeKey,
 		cdc:                cdc,
 		upgradeHandlers:    map[string]types.UpgradeHandler{},
+		versionSetter:      vs,
 	}
 }
 
@@ -47,6 +55,28 @@ func NewKeeper(skipUpgradeHeights map[int64]bool, storeKey sdk.StoreKey, cdc cod
 // must be set even if it is a no-op function.
 func (k Keeper) SetUpgradeHandler(name string, upgradeHandler types.UpgradeHandler) {
 	k.upgradeHandlers[name] = upgradeHandler
+}
+
+// setProtocolVersion sets the protocol version to state
+func (k Keeper) setProtocolVersion(ctx sdk.Context, v uint64) {
+	store := ctx.KVStore(k.storeKey)
+	versionBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(versionBytes, v)
+	store.Set([]byte{types.ProtocolVersionByte}, versionBytes)
+}
+
+// getProtocolVersion gets the protocol version from state
+func (k Keeper) getProtocolVersion(ctx sdk.Context) uint64 {
+	store := ctx.KVStore(k.storeKey)
+	ok := store.Has([]byte{types.ProtocolVersionByte})
+	if ok {
+		pvBytes := store.Get([]byte{types.ProtocolVersionByte})
+		protocolVersion := binary.BigEndian.Uint64(pvBytes)
+
+		return protocolVersion
+	}
+	// default value
+	return 0
 }
 
 // SetModuleVersionMap saves a given version map to state
@@ -82,6 +112,41 @@ func (k Keeper) GetModuleVersionMap(ctx sdk.Context) module.VersionMap {
 	return vm
 }
 
+// GetModuleVersions gets a slice of module consensus versions
+func (k Keeper) GetModuleVersions(ctx sdk.Context) []*types.ModuleVersion {
+	store := ctx.KVStore(k.storeKey)
+	it := sdk.KVStorePrefixIterator(store, []byte{types.VersionMapByte})
+	defer it.Close()
+
+	mv := make([]*types.ModuleVersion, 0)
+	for ; it.Valid(); it.Next() {
+		moduleBytes := it.Key()
+		name := string(moduleBytes[1:])
+		moduleVersion := binary.BigEndian.Uint64(it.Value())
+		mv = append(mv, &types.ModuleVersion{
+			Name:    name,
+			Version: moduleVersion,
+		})
+	}
+	return mv
+}
+
+// gets the version for a given module, and returns true if it exists, false otherwise
+func (k Keeper) getModuleVersion(ctx sdk.Context, name string) (uint64, bool) {
+	store := ctx.KVStore(k.storeKey)
+	it := sdk.KVStorePrefixIterator(store, []byte{types.VersionMapByte})
+	defer it.Close()
+
+	for ; it.Valid(); it.Next() {
+		moduleName := string(it.Key()[1:])
+		if moduleName == name {
+			version := binary.BigEndian.Uint64(it.Value())
+			return version, true
+		}
+	}
+	return 0, false
+}
+
 // ScheduleUpgrade schedules an upgrade based on the specified plan.
 // If there is another Plan already scheduled, it will overwrite it
 // (implicitly cancelling the current plan)
@@ -108,7 +173,7 @@ func (k Keeper) ScheduleUpgrade(ctx sdk.Context, plan types.Plan) error {
 		k.ClearIBCState(ctx, oldPlan.Height)
 	}
 
-	bz := k.cdc.MustMarshalBinaryBare(&plan)
+	bz := k.cdc.MustMarshal(&plan)
 	store.Set(types.PlanKey(), bz)
 
 	return nil
@@ -196,7 +261,7 @@ func (k Keeper) GetUpgradePlan(ctx sdk.Context) (plan types.Plan, havePlan bool)
 		return plan, false
 	}
 
-	k.cdc.MustUnmarshalBinaryBare(bz, &plan)
+	k.cdc.MustUnmarshal(bz, &plan)
 	return plan, true
 }
 
@@ -227,6 +292,14 @@ func (k Keeper) ApplyUpgrade(ctx sdk.Context, plan types.Plan) {
 	}
 
 	k.SetModuleVersionMap(ctx, updatedVM)
+
+	// incremement the protocol version and set it in state and baseapp
+	nextProtocolVersion := k.getProtocolVersion(ctx) + 1
+	k.setProtocolVersion(ctx, nextProtocolVersion)
+	if k.versionSetter != nil {
+		// set protocol version on BaseApp
+		k.versionSetter.SetProtocolVersion(nextProtocolVersion)
+	}
 
 	// Must clear IBC state after upgrade is applied as it is stored separately from the upgrade plan.
 	// This will prevent resubmission of upgrade msg after upgrade is already completed.

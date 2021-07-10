@@ -45,10 +45,12 @@ func (s *GRPCWebTestSuite) SetupSuite() {
 	cfg := network.DefaultConfig()
 	cfg.NumValidators = 1
 	s.cfg = cfg
-	s.network = network.New(s.T(), s.cfg)
-	s.Require().NotNil(s.network)
 
-	_, err := s.network.WaitForHeight(2)
+	var err error
+	s.network, err = network.New(s.T(), s.T().TempDir(), s.cfg)
+	s.Require().NoError(err)
+
+	_, err = s.network.WaitForHeight(2)
 	s.Require().NoError(err)
 
 	s.protoCdc = codec.NewProtoCodec(s.cfg.InterfaceRegistry)
@@ -72,7 +74,7 @@ func (s *GRPCWebTestSuite) Test_Latest_Validators() {
 		s.assertTrailerGrpcCode(trailers, codes.OK, "")
 		s.assertContentTypeSet(headers, contentType)
 		var valsSet tmservice.GetLatestValidatorSetResponse
-		err = s.protoCdc.UnmarshalBinaryBare(responses[0], &valsSet)
+		err = s.protoCdc.Unmarshal(responses[0], &valsSet)
 		s.Require().NoError(err)
 		pubKey, ok := valsSet.Validators[0].PubKey.GetCachedValue().(cryptotypes.PubKey)
 		s.Require().Equal(true, ok)
@@ -92,7 +94,7 @@ func (s *GRPCWebTestSuite) Test_Total_Supply() {
 		s.assertTrailerGrpcCode(trailers, codes.OK, "")
 		s.assertContentTypeSet(headers, contentType)
 		var totalSupply banktypes.QueryTotalSupplyResponse
-		_ = s.protoCdc.UnmarshalBinaryBare(responses[0], &totalSupply)
+		_ = s.protoCdc.Unmarshal(responses[0], &totalSupply)
 	}
 }
 

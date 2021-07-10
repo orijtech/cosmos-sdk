@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/staking/teststaking"
 	"github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -29,7 +30,7 @@ func bootstrapGenesisTest(numAddrs int) (*simapp.SimApp, sdk.Context, []sdk.AccA
 func TestInitGenesis(t *testing.T) {
 	app, ctx, addrs := bootstrapGenesisTest(10)
 
-	valTokens := sdk.TokensFromConsensusPower(1)
+	valTokens := app.StakingKeeper.TokensFromConsensusPower(ctx, 1)
 
 	params := app.StakingKeeper.GetParams(ctx)
 	validators := app.StakingKeeper.GetAllValidators(ctx)
@@ -64,8 +65,8 @@ func TestInitGenesis(t *testing.T) {
 	log.Printf("%#v", len(validators))
 	// mint coins in the bonded pool representing the validators coins
 	require.NoError(t,
-		simapp.FundModuleAccount(
-			app,
+		testutil.FundModuleAccount(
+			app.BankKeeper,
 			ctx,
 			types.BondedPoolName,
 			sdk.NewCoins(
@@ -99,7 +100,7 @@ func TestInitGenesis(t *testing.T) {
 
 	abcivals := make([]abci.ValidatorUpdate, len(vals))
 	for i, val := range validators {
-		abcivals[i] = val.ABCIValidatorUpdate()
+		abcivals[i] = val.ABCIValidatorUpdate(app.StakingKeeper.PowerReduction(ctx))
 	}
 
 	require.Equal(t, abcivals, vals)
@@ -168,9 +169,9 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 		require.NoError(t, err)
 		validators[i].Status = types.Bonded
 
-		tokens := sdk.TokensFromConsensusPower(1)
+		tokens := app.StakingKeeper.TokensFromConsensusPower(ctx, 1)
 		if i < 100 {
-			tokens = sdk.TokensFromConsensusPower(2)
+			tokens = app.StakingKeeper.TokensFromConsensusPower(ctx, 2)
 		}
 		validators[i].Tokens = tokens
 		validators[i].DelegatorShares = tokens.ToDec()
@@ -182,8 +183,8 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 
 	// mint coins in the bonded pool representing the validators coins
 	require.NoError(t,
-		simapp.FundModuleAccount(
-			app,
+		testutil.FundModuleAccount(
+			app.BankKeeper,
 			ctx,
 			types.BondedPoolName,
 			sdk.NewCoins(sdk.NewCoin(params.BondDenom, bondedPoolAmt)),
@@ -194,7 +195,7 @@ func TestInitGenesisLargeValidatorSet(t *testing.T) {
 
 	abcivals := make([]abci.ValidatorUpdate, 100)
 	for i, val := range validators[:100] {
-		abcivals[i] = val.ABCIValidatorUpdate()
+		abcivals[i] = val.ABCIValidatorUpdate(app.StakingKeeper.PowerReduction(ctx))
 	}
 
 	require.Equal(t, abcivals, vals)

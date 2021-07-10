@@ -2,7 +2,6 @@ package staking
 
 import (
 	"fmt"
-	"log"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmtypes "github.com/tendermint/tendermint/types"
@@ -44,7 +43,9 @@ func InitGenesis(
 
 		// Call the creation hook if not exported
 		if !data.Exported {
-			keeper.AfterValidatorCreated(ctx, validator.GetOperator())
+			if err := keeper.AfterValidatorCreated(ctx, validator.GetOperator()); err != nil {
+				panic(err)
+			}
 		}
 
 		// update timeslice if necessary
@@ -70,13 +71,17 @@ func InitGenesis(
 
 		// Call the before-creation hook if not exported
 		if !data.Exported {
-			keeper.BeforeDelegationCreated(ctx, delegatorAddress, delegation.GetValidatorAddr())
+			if err := keeper.BeforeDelegationCreated(ctx, delegatorAddress, delegation.GetValidatorAddr()); err != nil {
+				panic(err)
+			}
 		}
 
 		keeper.SetDelegation(ctx, delegation)
 		// Call the after-modification hook if not exported
 		if !data.Exported {
-			keeper.AfterDelegationModified(ctx, delegatorAddress, delegation.GetValidatorAddr())
+			if err := keeper.AfterDelegationModified(ctx, delegatorAddress, delegation.GetValidatorAddr()); err != nil {
+				panic(err)
+			}
 		}
 	}
 
@@ -141,7 +146,7 @@ func InitGenesis(
 				panic(fmt.Sprintf("validator %s not found", lv.Address))
 			}
 
-			update := validator.ABCIValidatorUpdate()
+			update := validator.ABCIValidatorUpdate(keeper.PowerReduction(ctx))
 			update.Power = lv.Power // keep the next-val-set offset, use the last power for the first block
 			res = append(res, update)
 		}
@@ -149,7 +154,7 @@ func InitGenesis(
 		var err error
 		res, err = keeper.ApplyAndReturnValidatorSetUpdates(ctx)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}
 
@@ -208,7 +213,7 @@ func WriteValidators(ctx sdk.Context, keeper keeper.Keeper) (vals []tmtypes.Gene
 		vals = append(vals, tmtypes.GenesisValidator{
 			Address: sdk.ConsAddress(tmPk.Address()).Bytes(),
 			PubKey:  tmPk,
-			Power:   validator.GetConsensusPower(),
+			Power:   validator.GetConsensusPower(keeper.PowerReduction(ctx)),
 			Name:    validator.GetMoniker(),
 		})
 
@@ -237,17 +242,22 @@ func validateGenesisStateValidators(validators []types.Validator) error {
 		if err != nil {
 			return err
 		}
-		consAddr, err := val.GetConsAddr()
-		if err != nil {
-			return err
-		}
+
 		strKey := string(consPk.Bytes())
 
 		if _, ok := addrMap[strKey]; ok {
+			consAddr, err := val.GetConsAddr()
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("duplicate validator in genesis state: moniker %v, address %v", val.Description.Moniker, consAddr)
 		}
 
 		if val.Jailed && val.IsBonded() {
+			consAddr, err := val.GetConsAddr()
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("validator is bonded and jailed in genesis state: moniker %v, address %v", val.Description.Moniker, consAddr)
 		}
 

@@ -164,7 +164,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryProposals() {
 		{
 			"request with filter of deposit address",
 			func() {
-				depositCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(20)))
+				depositCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, app.StakingKeeper.TokensFromConsensusPower(ctx, 20)))
 				deposit := types.NewDeposit(testProposals[0].ProposalId, addrs[0], depositCoins)
 				app.GovKeeper.SetDeposit(ctx, deposit)
 
@@ -298,7 +298,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryVote() {
 					Voter:      addrs[0].String(),
 				}
 
-				expRes = &types.QueryVoteResponse{Vote: types.NewVote(proposal.ProposalId, addrs[0], types.NewNonSplitVoteOption(types.OptionAbstain))}
+				expRes = &types.QueryVoteResponse{Vote: types.Vote{ProposalId: proposal.ProposalId, Voter: addrs[0].String(), Option: types.OptionAbstain, Options: []types.WeightedVoteOption{{Option: types.OptionAbstain, Weight: sdk.MustNewDecFromStr("1.0")}}}}
 			},
 			true,
 		},
@@ -395,8 +395,8 @@ func (suite *KeeperTestSuite) TestGRPCQueryVotes() {
 				app.GovKeeper.SetProposal(ctx, proposal)
 
 				votes = []types.Vote{
-					{proposal.ProposalId, addrs[0].String(), types.NewNonSplitVoteOption(types.OptionAbstain)},
-					{proposal.ProposalId, addrs[1].String(), types.NewNonSplitVoteOption(types.OptionYes)},
+					{ProposalId: proposal.ProposalId, Voter: addrs[0].String(), Option: types.OptionAbstain, Options: types.NewNonSplitVoteOption(types.OptionAbstain)},
+					{ProposalId: proposal.ProposalId, Voter: addrs[1].String(), Option: types.OptionYes, Options: types.NewNonSplitVoteOption(types.OptionYes)},
 				}
 				accAddr1, err1 := sdk.AccAddressFromBech32(votes[0].Voter)
 				accAddr2, err2 := sdk.AccAddressFromBech32(votes[1].Voter)
@@ -584,7 +584,7 @@ func (suite *KeeperTestSuite) TestGRPCQueryDeposit() {
 		{
 			"valid request",
 			func() {
-				depositCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(20)))
+				depositCoins := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, app.StakingKeeper.TokensFromConsensusPower(ctx, 20)))
 				deposit := types.NewDeposit(proposal.ProposalId, addrs[0], depositCoins)
 				app.GovKeeper.SetDeposit(ctx, deposit)
 
@@ -671,11 +671,11 @@ func (suite *KeeperTestSuite) TestGRPCQueryDeposits() {
 		{
 			"get deposits with default limit",
 			func() {
-				depositAmount1 := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(20)))
+				depositAmount1 := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, app.StakingKeeper.TokensFromConsensusPower(ctx, 20)))
 				deposit1 := types.NewDeposit(proposal.ProposalId, addrs[0], depositAmount1)
 				app.GovKeeper.SetDeposit(ctx, deposit1)
 
-				depositAmount2 := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.TokensFromConsensusPower(30)))
+				depositAmount2 := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, app.StakingKeeper.TokensFromConsensusPower(ctx, 30)))
 				deposit2 := types.NewDeposit(proposal.ProposalId, addrs[1], depositAmount2)
 				app.GovKeeper.SetDeposit(ctx, deposit2)
 

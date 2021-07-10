@@ -20,7 +20,7 @@ import (
 type SubspaceTestSuite struct {
 	suite.Suite
 
-	cdc   codec.BinaryMarshaler
+	cdc   codec.BinaryCodec
 	amino *codec.LegacyAmino
 	ctx   sdk.Context
 	ss    types.Subspace
@@ -35,9 +35,9 @@ func (suite *SubspaceTestSuite) SetupTest() {
 	suite.NoError(ms.LoadLatestVersion())
 
 	encCfg := simapp.MakeTestEncodingConfig()
-	ss := types.NewSubspace(encCfg.Marshaler, encCfg.Amino, key, tkey, "testsubspace")
+	ss := types.NewSubspace(encCfg.Codec, encCfg.Amino, key, tkey, "testsubspace")
 
-	suite.cdc = encCfg.Marshaler
+	suite.cdc = encCfg.Codec
 	suite.amino = encCfg.Amino
 	suite.ctx = sdk.NewContext(ms, tmproto.Header{}, false, log.NewNopLogger())
 	suite.ss = ss.WithKeyTable(paramKeyTable())
